@@ -12,9 +12,10 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, "public"))); // serve frontend if needed
 
-// ✅ Create server before io
+// ✅ Create HTTP server before Socket.IO
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -95,7 +96,6 @@ io.on("connection", (socket) => {
     socket.emit("joinSuccess", { referee, court });
   });
 
-  
   socket.on("refereeScore", ({ referee, court, player, points }) => {
     if (!courts[court]) return;
     if (!courts[court].scores[referee]) return;
@@ -131,11 +131,20 @@ io.on("connection", (socket) => {
   });
 });
 
+// --- REST APIs ---
 
+// ✅ Test API (for Postman or Browser)
+app.get("/api/test", (req, res) => {
+  res.json({ message: "Server is running ✅", time: new Date().toISOString() });
+});
 
-app.use(express.json());
+// ✅ Get all courts info
+app.get("/api/courts", (req, res) => {
+  res.json(courts);
+});
 
-app.post("/refereeScore", (req, res) => {
+// ✅ Manual referee score API (optional if you want REST also)
+app.post("/api/refereeScore", (req, res) => {
   const { referee, court, player, points } = req.body;
   if (!courts[court]) return res.status(400).send("Invalid court");
 
@@ -151,7 +160,7 @@ app.post("/refereeScore", (req, res) => {
   res.json({ success: true });
 });
 
-// Start server
+// --- Start server ---
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log("✅ Server running on http://localhost:" + PORT);
